@@ -98,7 +98,8 @@ def scan(path: str, follow_symlinks: bool=False, max_depth: int=-1):
             try:
                 it.close()
             except Exception:
-
+                pass 
+            
     paths = sorted(result.keys(), key=lambda p: -len(p))
     for p in paths:
         size, t, mtime = result[p]

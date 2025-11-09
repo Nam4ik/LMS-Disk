@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>608</width>
+    <width>606</width>
     <height>355</height>
    </rect>
   </property>
@@ -17,51 +17,65 @@
    <widget class="QWidget" name="">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>30</y>
+      <x>10</x>
+      <y>10</y>
       <width>571</width>
-      <height>301</height>
+      <height>321</height>
      </rect>
     </property>
-    <layout class="QVBoxLayout" name="verticalLayout_2">
+    <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>LMS: DiskTool</string>
+         </property>
+        </widget>
+       </item>
        <item>
         <layout class="QVBoxLayout" name="verticalLayout">
          <item>
-          <widget class="QPushButton" name="pushButton">
+          <widget class="QPushButton" name="scanButton">
            <property name="text">
             <string>Сканировать</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="pushButton_2">
-           <property name="text">
-            <string>Посмотреть прошлые снапшоты</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="pushButton_3">
+          <widget class="QPushButton" name="sysInfoButton">
            <property name="text">
             <string>Информация о системе</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="pushButton_4">
+          <widget class="QPushButton" name="snapshotsButton">
+           <property name="text">
+            <string>Посмотреть прошлые снапшоты</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="settingsButton">
            <property name="text">
             <string>Настройки</string>
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QPushButton" name="sourceButton">
+           <property name="text">
+            <string>Посмотреть код</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
-       <item>
-        <widget class="QWidget" name="widget" native="true"/>
-       </item>
       </layout>
+     </item>
+     <item>
+      <widget class="QWidget" name="diskChart" native="true"/>
      </item>
     </layout>
    </widget>

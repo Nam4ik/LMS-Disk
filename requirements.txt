@@ -2,4 +2,4 @@ PyQT6
 PyQT6-charts 
 PyQT6-tools 
 Cython
-
+psutil
