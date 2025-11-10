@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -83,49 +83,49 @@
         <item>
          <widget class="QLabel" name="CPU">
           <property name="text">
-           <string>Процессор:</string>
+           <string>CPU</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QLabel" name="CPUCore">
           <property name="text">
-           <string>Количество ядер CPU:</string>
+           <string>CPUCore</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QLabel" name="CPULoad">
           <property name="text">
-           <string>Загрузка CPU:</string>
+           <string>CPULoad</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QLabel" name="OS">
           <property name="text">
-           <string>ОС:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="RAM">
-          <property name="text">
-           <string>Загрузка ОЗУ:</string>
+           <string>OS</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QLabel" name="GPUTemp">
           <property name="text">
-           <string>Температура GPU</string>
+           <string>GPUTemp</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="RAM">
+          <property name="text">
+           <string>RAM</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QLabel" name="Disk">
           <property name="text">
-           <string>Диск:</string>
+           <string>Disk</string>
           </property>
          </widget>
         </item>

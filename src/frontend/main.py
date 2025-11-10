@@ -1,6 +1,7 @@
 import os
 import sys
 import webbrowser
+import datetime
 from operator import itemgetter
 
 from PyQt6.QtWidgets import (
@@ -38,6 +39,7 @@ class ScanThread(QThread):
 
             try:
                 result = libdiscscan.scan(self.path_to_scan, False, -1)
+                libdiscscan.save_snapshot(os.abspath("snapshots.db"), f"snapshot-{datetime.datetime.now()}", result)
             except TypeError:
                 result = libdiscscan.scan(self.path_to_scan)
             if not isinstance(result, dict):
@@ -72,6 +74,8 @@ class DiskTool(QMainWindow):
     def source_code_open(self):
         webbrowser.open('https://github.com/Nam4ik/LMS-Disk')
 
+    def show_snapshots(self):
+        pass 
     def _setup_chart(self):
         self.chart = QChart()
         self.chart.setTitle("Распределение размеров (топ)")

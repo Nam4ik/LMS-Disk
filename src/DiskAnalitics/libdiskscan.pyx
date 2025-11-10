@@ -1,13 +1,17 @@
 
 import ctypes
-from ctypes import wintypes
 from cpython.ref cimport PyObject
 import os
 import sys
 import sqlite3
-from time import time
+from time import time 
 
 from typing import Dict, Tuple
+
+if os.name == "nt": 
+    from ctypes import wintypes 
+else: 
+    pass 
 
 cdef class Entry:
     cdef public object path
