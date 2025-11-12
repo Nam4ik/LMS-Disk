@@ -1,10 +1,5 @@
-import os
 from os.path import abspath
-import sys
-import webbrowser
-import datetime
-from operator import itemgetter
-
+import sys, os, webbrowser, datetime
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QMessageBox, QWidget
 )
@@ -12,13 +7,14 @@ from PyQt6.uic import loadUi
 from PyQt6.QtCharts import (
     QChart, QChartView, QLineSeries, QCategoryAxis, QValueAxis, QBarSet, QBarSeries, QBarCategoryAxis
 )
-
 from PyQt6.QtGui import QPainter
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from info import Info
+from operator import itemgetter
 
 try:
     import libdiskscan as libdiscscan
+
     HAS_LIB = True
 except Exception as e:
     libdiscscan = None
@@ -51,10 +47,11 @@ class ScanThread(QThread):
         except Exception as e:
             self.error.emit(str(e))
 
-class SysInfo(QWidget): 
+
+class SysInfo(QWidget):
     def __init__(self):
         super().__init__()
-        
+
 
 class DiskTool(QMainWindow):
     def __init__(self):
@@ -65,19 +62,20 @@ class DiskTool(QMainWindow):
         self.sourceButton.clicked.connect(self.source_code_open)
         self.scanButton.clicked.connect(self.on_scan_clicked)
         self.sysInfoButton.clicked.connect(self.show_sysinfo)
-        self.setWindowIconText("Disk Tool") 
+        self.setWindowIconText("Disk Tool")
         self._setup_chart()
 
         if not HAS_LIB:
             self.statusbar.showMessage(f"Не удалось импортировать libdiscscan: {_import_error}")
 
-        self.scan_thread = None 
+        self.scan_thread = None
 
     def source_code_open(self):
         webbrowser.open('https://github.com/Nam4ik/LMS-Disk')
 
     def show_snapshots(self):
-        pass 
+        pass
+
     def _setup_chart(self):
         self.chart = QChart()
         self.chart.setTitle("Распределение размеров (топ)")
@@ -101,7 +99,6 @@ class DiskTool(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.chart_view)
 
-
     def on_scan_clicked(self):
         if not HAS_LIB:
             QMessageBox.warning(self, "Ошибка", f"Модуль libdiscscan не доступен:\n{_import_error}")
@@ -118,8 +115,6 @@ class DiskTool(QMainWindow):
 
         self.scanButton.setEnabled(False)
         self.scanButton.setText("Сканирование...")
-
-
 
     def on_scan_finished(self, result: dict):
         self.scanButton.setEnabled(True)
@@ -146,10 +141,8 @@ class DiskTool(QMainWindow):
             self.statusbar.showMessage("Готово — нет данных")
             return
 
-        # Удаляем старые серии
         self.chart.removeAllSeries()
 
-        # Создаём новую серию
         bar_series = QBarSeries()
         bar_set = QBarSet("Размер (MB)")
 
@@ -166,7 +159,6 @@ class DiskTool(QMainWindow):
         bar_series.append(bar_set)
         self.chart.addSeries(bar_series)
 
-        # Оси
         axis_x = QBarCategoryAxis()
         axis_x.append(categories)
         axis_x.setLabelsAngle(-45)
@@ -186,7 +178,6 @@ class DiskTool(QMainWindow):
         self.chart.setTitle(f"Топ {len(top_n)} элементов на {abspath(os.sep)}")
         self.statusbar.showMessage(f"Сканирование завершено — показаны {len(top_n)} элементов")
 
-
     def on_scan_error(self, message: str):
         self.scanButton.setEnabled(True)
         self.scanButton.setText("Сканировать")
@@ -195,17 +186,17 @@ class DiskTool(QMainWindow):
 
     def show_sysinfo(self):
         try:
-            self.sysinfo_window = Info()   
-            self.sysinfo_window.show() 
-            self.sysinfo_window.render_data()  
-        
+            self.sysinfo_window = Info()
+            self.sysinfo_window.show()
+            self.sysinfo_window.render_data()
+
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось открыть окно системной информации:\n{e}")
 
-
-    def on_sysinfo_clicked(self): 
+    def on_sysinfo_clicked(self):
         self.sysInfoButton.clicked.connect(self.show_sysinfo)
         self.show_sysinfo()
+
 
 def main() -> None:
     app = QApplication(sys.argv)
