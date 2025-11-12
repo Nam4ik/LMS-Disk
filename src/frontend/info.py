@@ -42,10 +42,10 @@ class Info(QWidget):
        try: 
          self.CPU.setText(platform.processor())
          self.CPUCore.setText(str(psutil.cpu_count(logical=False)))
-         self.CPULoad.setText(str(psutil.cpu_percent()))
-         self.GPUTemp.setText(str(psutil.sensors_temperatures()['coretemp'][0].current))
-         self.RAM.setText(str(psutil.virtual_memory().percent))
-         self.Disk.setText(str(psutil.disk_usage('/' if os.name == 'posix' else 'C:').percent))
+         self.CPULoad.setText(f"{str(psutil.cpu_percent())}%")
+         self.GPUTemp.setText(str(psutil.sensors_temperatures()['coretemp'][0].current).join('C'))
+         self.RAM.setText(f"{str(psutil.virtual_memory().percent)}%")
+         self.Disk.setText(f"{str(psutil.disk_usage('/' if os.name == 'posix' else 'C:').percent)}%")
          self.OS.setText(str(os.uname()))
 
          stats = ['CPU', 'CPUCore', 'CPULoad', 'GPUTemp', 'RAM', 'Disk', 'OS']

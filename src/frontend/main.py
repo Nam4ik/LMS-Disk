@@ -1,4 +1,5 @@
 import os
+from os.path import abspath
 import sys
 import webbrowser
 import datetime
@@ -9,8 +10,9 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.uic import loadUi
 from PyQt6.QtCharts import (
-    QChart, QChartView, QLineSeries, QCategoryAxis, QValueAxis
+    QChart, QChartView, QLineSeries, QCategoryAxis, QValueAxis, QBarSet, QBarSeries, QBarCategoryAxis
 )
+
 from PyQt6.QtGui import QPainter
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from info import Info
@@ -39,7 +41,7 @@ class ScanThread(QThread):
 
             try:
                 result = libdiscscan.scan(self.path_to_scan, False, -1)
-                libdiscscan.save_snapshot(os.abspath("snapshots.db"), f"snapshot-{datetime.datetime.now()}", result)
+                libdiscscan.save_snapshot(abspath("snapshots.db"), f"snapshot-{datetime.datetime.now()}", result)
             except TypeError:
                 result = libdiscscan.scan(self.path_to_scan)
             if not isinstance(result, dict):
@@ -63,7 +65,7 @@ class DiskTool(QMainWindow):
         self.sourceButton.clicked.connect(self.source_code_open)
         self.scanButton.clicked.connect(self.on_scan_clicked)
         self.sysInfoButton.clicked.connect(self.show_sysinfo)
-
+        self.setWindowIconText("Disk Tool") 
         self._setup_chart()
 
         if not HAS_LIB:
@@ -105,7 +107,7 @@ class DiskTool(QMainWindow):
             QMessageBox.warning(self, "Ошибка", f"Модуль libdiscscan не доступен:\n{_import_error}")
             return
 
-        path_to_scan = os.path.abspath(os.sep)
+        path_to_scan = abspath(os.sep)
         self.statusbar.showMessage(f"Сканирование {path_to_scan} ...")
         QApplication.processEvents()
 
@@ -116,6 +118,7 @@ class DiskTool(QMainWindow):
 
         self.scanButton.setEnabled(False)
         self.scanButton.setText("Сканирование...")
+
 
 
     def on_scan_finished(self, result: dict):
@@ -143,38 +146,46 @@ class DiskTool(QMainWindow):
             self.statusbar.showMessage("Готово — нет данных")
             return
 
-        self.series.clear()
+        # Удаляем старые серии
+        self.chart.removeAllSeries()
 
-        self.chart.removeAxis(self.axis_x)
-        self.axis_x = QCategoryAxis()
-        self.axis_x.setLabelsAngle(-45)
-        self.axis_x.setTitleText("Путь (топ элементов)")
+        # Создаём новую серию
+        bar_series = QBarSeries()
+        bar_set = QBarSet("Размер (MB)")
 
-        self.chart.removeAxis(self.axis_y)
-        self.axis_y = QValueAxis()
-        self.axis_y.setLabelFormat("%.0f")
-        self.axis_y.setTitleText("Размер (MB)")
-
-        max_y_mb = 1.0
-
-        for idx, (p, size_bytes, t) in enumerate(top_n):
+        categories = []
+        for p, size_bytes, t in top_n:
             size_mb = size_bytes / (1024.0 * 1024.0)
-            self.series.append(idx, size_mb)
+            bar_set.append(size_mb)
+
             label = os.path.basename(p) or p
             if len(label) > 20:
                 label = label[:17] + "..."
-            self.axis_x.append(label, idx)
-            if size_mb > max_y_mb:
-                max_y_mb = size_mb
+            categories.append(label)
 
-        self.chart.addAxis(self.axis_x, Qt.AlignmentFlag.AlignBottom)
-        self.chart.addAxis(self.axis_y, Qt.AlignmentFlag.AlignLeft)
-        self.series.attachAxis(self.axis_x)
-        self.series.attachAxis(self.axis_y)
-        self.axis_y.setRange(0, max_y_mb * 1.1)
+        bar_series.append(bar_set)
+        self.chart.addSeries(bar_series)
 
-        self.chart.setTitle(f"Топ {len(top_n)} элементов на {os.path.abspath(os.sep)}")
+        # Оси
+        axis_x = QBarCategoryAxis()
+        axis_x.append(categories)
+        axis_x.setLabelsAngle(-45)
+        axis_x.setTitleText("Путь (топ элементов)")
+
+        axis_y = QValueAxis()
+        axis_y.setTitleText("Размер (MB)")
+        axis_y.setLabelFormat("%.0f")
+
+        self.chart.addAxis(axis_x, Qt.AlignmentFlag.AlignBottom)
+        self.chart.addAxis(axis_y, Qt.AlignmentFlag.AlignLeft)
+        bar_series.attachAxis(axis_x)
+        bar_series.attachAxis(axis_y)
+
+        axis_y.setRange(0, max(bar_set) * 1.1)
+
+        self.chart.setTitle(f"Топ {len(top_n)} элементов на {abspath(os.sep)}")
         self.statusbar.showMessage(f"Сканирование завершено — показаны {len(top_n)} элементов")
+
 
     def on_scan_error(self, message: str):
         self.scanButton.setEnabled(True)

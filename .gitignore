@@ -211,3 +211,6 @@ __marimo__/
 *.dll 
 *.c 
 build/ 
+*.pyd
+*.so
+*.db

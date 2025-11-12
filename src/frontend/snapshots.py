@@ -13,5 +13,3 @@ class Snapshots(QWidget):
         self.cursor = self.con.cursor()
         self.cursor.execute("SELECT * FROM snapshots")
         self.rows = self.cursor.fetchall()
-        self.table = QTableWidget()
-        self.table.setRowCount(len(self.rows))
