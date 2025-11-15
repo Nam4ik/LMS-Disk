@@ -13,7 +13,7 @@ from operator import itemgetter
 
 from info import Info
 from statistics import Statistics
-import sqlite3 
+import sqlite3
 
 try:
     import libdiskscan as libdiscscan
@@ -203,9 +203,10 @@ class DiskTool(QMainWindow):
         try:
             self.statistics_window = Statistics()
             self.statistics_window.show()
-            
+
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось открыть окно статистики:\n{e}")
+
 
 def main() -> None:
     app = QApplication(sys.argv)

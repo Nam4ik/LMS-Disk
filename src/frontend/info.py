@@ -1,7 +1,6 @@
 import psutil, os, platform
-from PyQt6.QtWidgets import QWidget, QApplication 
+from PyQt6.QtWidgets import QWidget, QApplication
 from PyQt6.uic import loadUi
-
 
 """
 def sysinfo_json() -> str: 
@@ -36,13 +35,12 @@ class Info(QWidget):
 
             cpu_name = platform.processor() or "Неизвестно"
             self.CPU.setText(cpu_name)
-            
+
             cpu_cores = psutil.cpu_count(logical=False) or psutil.cpu_count()
             self.CPUCore.setText(str(cpu_cores))
-            
+
             cpu_load = psutil.cpu_percent(interval=0.1)
             self.CPULoad.setText(f"{cpu_load:.1f}%")
-            
 
             try:
                 sensors = psutil.sensors_temperatures()
@@ -54,15 +52,13 @@ class Info(QWidget):
             except (KeyError, IndexError, AttributeError):
                 self.GPUTemp.setText("Недоступно")
 
-
             ram_percent = psutil.virtual_memory().percent
             self.RAM.setText(f"{ram_percent:.1f}%")
-            
 
             disk_path = '/' if os.name == 'posix' else 'C:'
             disk_percent = psutil.disk_usage(disk_path).percent
             self.Disk.setText(f"{disk_percent:.1f}%")
-            
+
             try:
                 if os.name == 'posix':
                     uname = os.uname()
