@@ -116,54 +116,6 @@ def scan(path: str, follow_symlinks: bool=False, max_depth: int=-1):
     return result
 
 
-def get_fs_type(path: str) -> str:
-    if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
-        try:
-            mounts = []
-            with open('/proc/mounts', 'r') as f:
-                for line in f:
-                    parts = line.split()
-                    if len(parts) >= 3:
-                        device = parts[0]
-                        mpoint = parts[1]
-                        fstype = parts[2]
-                        mounts.append((mpoint, fstype))
-            mounts.sort(key=lambda x: -len(x[0]))
-            abs_path = os.path.abspath(path)
-            for mpoint, fstype in mounts:
-                if abs_path.startswith(mpoint.rstrip('/')):
-                    return fstype
-        except Exception:
-            pass
-        try:
-            st = os.statvfs(path)
-            return 'unknown'
-        except Exception:
-            return 'unknown'
-    elif sys.platform.startswith('win'):
-        try:
-            GetVolumePathNameW = ctypes.windll.kernel32.GetVolumePathNameW
-            GetVolumePathNameW.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]
-            GetVolumeInformationW = ctypes.windll.kernel32.GetVolumeInformationW
-            GetVolumeInformationW.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD,
-                                             wintypes.LPDWORD, wintypes.LPDWORD, wintypes.LPDWORD, wintypes.LPWSTR, wintypes.DWORD]
-            buffer_len = 260
-            vol_name_buf = ctypes.create_unicode_buffer(buffer_len)
-            fs_name_buf = ctypes.create_unicode_buffer(buffer_len)
-            root_path_buf = ctypes.create_unicode_buffer(buffer_len)
-            res = GetVolumePathNameW(path, root_path_buf, buffer_len)
-            if res == 0:
-                return 'unknown'
-            res2 = GetVolumeInformationW(root_path_buf, vol_name_buf, buffer_len, None, None, None, fs_name_buf, buffer_len)
-            if res2 == 0:
-                return 'unknown'
-            return fs_name_buf.value
-        except Exception:
-            return 'unknown'
-    else:
-        return 'unknown'
-
-
 def save_snapshot(db_path: str, snapshot_name: str, entries: dict) -> None:
     """
     Save snapshot into sqlite3 database.

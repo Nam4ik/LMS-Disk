@@ -9,8 +9,11 @@ from PyQt6.QtCharts import (
 )
 from PyQt6.QtGui import QPainter
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from info import Info
 from operator import itemgetter
+
+from info import Info
+from statistics import Statistics
+import sqlite3 
 
 try:
     import libdiskscan as libdiscscan
@@ -59,9 +62,11 @@ class DiskTool(QMainWindow):
         ui_path = os.path.join(os.path.dirname(__file__), "DiskUI.ui")
         loadUi(ui_path, self)
 
+        self.setWindowTitle("LMS-Disk")
         self.sourceButton.clicked.connect(self.source_code_open)
         self.scanButton.clicked.connect(self.on_scan_clicked)
         self.sysInfoButton.clicked.connect(self.show_sysinfo)
+        self.snapshotsButton.clicked.connect(self.show_statistics)
         self.setWindowIconText("Disk Tool")
         self._setup_chart()
 
@@ -72,9 +77,6 @@ class DiskTool(QMainWindow):
 
     def source_code_open(self):
         webbrowser.open('https://github.com/Nam4ik/LMS-Disk')
-
-    def show_snapshots(self):
-        pass
 
     def _setup_chart(self):
         self.chart = QChart()
@@ -197,6 +199,13 @@ class DiskTool(QMainWindow):
         self.sysInfoButton.clicked.connect(self.show_sysinfo)
         self.show_sysinfo()
 
+    def show_statistics(self):
+        try:
+            self.statistics_window = Statistics()
+            self.statistics_window.show()
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось открыть окно статистики:\n{e}")
 
 def main() -> None:
     app = QApplication(sys.argv)

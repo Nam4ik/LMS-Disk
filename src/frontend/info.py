@@ -1,15 +1,6 @@
 import psutil, os, platform
-from PyQt6.QtWidgets import QWidget, QApplication
+from PyQt6.QtWidgets import QWidget, QApplication 
 from PyQt6.uic import loadUi
-
-
-def envpath() -> str:
-    if os.name == 'posix':
-        cachedir = os.environ.get('XDG_CACHE_HOME', os.path.expanduser('~/.cache'))
-        return cachedir
-    else:
-        cachedir = os.path.join()
-        return cachedir
 
 
 """
@@ -38,21 +29,49 @@ class Info(QWidget):
         super().__init__()
         ui_path = os.path.join(os.path.dirname(__file__), "SysInfo.ui")
         loadUi(ui_path, self)
+        self.setWindowTitle("LMS-Disk - SysInfo")
 
     def render_data(self) -> None:
         try:
-            self.CPU.setText(platform.processor())
-            self.CPUCore.setText(str(psutil.cpu_count(logical=False)))
-            self.CPULoad.setText(f"{str(psutil.cpu_percent())}%")
-            self.GPUTemp.setText(str(psutil.sensors_temperatures()['coretemp'][0].current).join('C'))
-            self.RAM.setText(f"{str(psutil.virtual_memory().percent)}%")
-            self.Disk.setText(f"{str(psutil.disk_usage('/' if os.name == 'posix' else 'C:').percent)}%")
-            self.OS.setText(str(os.uname()))
 
-            stats = ['CPU', 'CPUCore', 'CPULoad', 'GPUTemp', 'RAM', 'Disk', 'OS']
+            cpu_name = platform.processor() or "Неизвестно"
+            self.CPU.setText(cpu_name)
+            
+            cpu_cores = psutil.cpu_count(logical=False) or psutil.cpu_count()
+            self.CPUCore.setText(str(cpu_cores))
+            
+            cpu_load = psutil.cpu_percent(interval=0.1)
+            self.CPULoad.setText(f"{cpu_load:.1f}%")
+            
 
-            for stat in stats:
-                self.stat.setReadOnly(True)
+            try:
+                sensors = psutil.sensors_temperatures()
+                if 'coretemp' in sensors and len(sensors['coretemp']) > 0:
+                    gpu_temp = sensors['coretemp'][0].current
+                    self.GPUTemp.setText(f"{gpu_temp:.1f}°C")
+                else:
+                    self.GPUTemp.setText("Недоступно")
+            except (KeyError, IndexError, AttributeError):
+                self.GPUTemp.setText("Недоступно")
+
+
+            ram_percent = psutil.virtual_memory().percent
+            self.RAM.setText(f"{ram_percent:.1f}%")
+            
+
+            disk_path = '/' if os.name == 'posix' else 'C:'
+            disk_percent = psutil.disk_usage(disk_path).percent
+            self.Disk.setText(f"{disk_percent:.1f}%")
+            
+            try:
+                if os.name == 'posix':
+                    uname = os.uname()
+                    os_info = f"{uname.sysname} {uname.release}"
+                else:
+                    os_info = f"{platform.system()} {platform.release()}"
+                self.OS.setText(os_info)
+            except AttributeError:
+                self.OS.setText(platform.system())
 
         except Exception as e:
             print("Cannot render data: " + str(e))
