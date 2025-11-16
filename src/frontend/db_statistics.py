@@ -1,9 +1,19 @@
 import sqlite3
 import os
+import sys
 from os.path import abspath
 from PyQt6.QtWidgets import QWidget, QTableWidgetItem, QMessageBox, QAbstractItemView
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.uic import loadUi
+
+
+def get_db_path():
+    if getattr(sys, 'frozen', False):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.dirname(__file__)
+    
+    return os.path.join(base_path, "snapshots.db")
 
 
 class StatisticsThread(QThread):
@@ -56,7 +66,7 @@ class Statistics(QWidget):
         super().__init__()
         loadUi(os.path.join(os.path.dirname(__file__), "Statistics.ui"), self)
         self.setWindowTitle("LMS-Disk - Snapshots viewer")
-        self.db_path = db_path or abspath("snapshots.db")
+        self.db_path = db_path or get_db_path()
         self.refreshButton.clicked.connect(self.load_statistics)
 
         self.statisticsTable.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)

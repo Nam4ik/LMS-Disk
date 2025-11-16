@@ -28,6 +28,15 @@ except Exception as e:
     _import_error = e
 
 
+def get_db_path():
+    if getattr(sys, 'frozen', False):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.dirname(__file__)
+    
+    return os.path.join(base_path, "snapshots.db")
+
+
 class ScanThread(QThread):
     result_ready = pyqtSignal(dict)
     error = pyqtSignal(str)
@@ -43,7 +52,8 @@ class ScanThread(QThread):
 
             try:
                 result = libdiscscan.scan(self.path_to_scan, False, -1)
-                libdiscscan.save_snapshot(abspath("snapshots.db"), f"snapshot-{datetime.datetime.now()}", result)
+                db_path = get_db_path()
+                libdiscscan.save_snapshot(db_path, f"snapshot-{datetime.datetime.now()}", result)
             except TypeError:
                 result = libdiscscan.scan(self.path_to_scan)
             if not isinstance(result, dict):
@@ -249,7 +259,7 @@ class DiskTool(QMainWindow):
             QMessageBox.critical(self, "Ошибка", f"Не удалось открыть окно системной информации:\n{e}")
 
     def show_statistics(self):
-        db_path = os.path.join(os.path.dirname(__file__), "snapshots.db")
+        db_path = get_db_path()
         
         self.statistics_thread = StatisticsThread(db_path)
         self.statistics_thread.status_update.connect(self.statusbar.showMessage)
@@ -260,7 +270,7 @@ class DiskTool(QMainWindow):
 
     def _create_statistics_window(self):
         try:
-            db_path = os.path.join(os.path.dirname(__file__), "snapshots.db")
+            db_path = get_db_path()
             self.statistics_window = Statistics(db_path)
             self.statistics_window.show()
         except Exception as e:
