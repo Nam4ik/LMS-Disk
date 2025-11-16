@@ -105,4 +105,3 @@ class Settings(QWidget):
             "default_path": self.defaultPathEdit.text()
         }
 
-s
