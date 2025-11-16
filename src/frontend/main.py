@@ -1,19 +1,22 @@
 from os.path import abspath
-import sys, os, webbrowser, datetime
+import sys, os, webbrowser, datetime, json
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QMessageBox, QWidget
+    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QMessageBox, QWidget
 )
 from PyQt6.uic import loadUi
 from PyQt6.QtCharts import (
-    QChart, QChartView, QLineSeries, QCategoryAxis, QValueAxis, QBarSet, QBarSeries, QBarCategoryAxis
+    QChart, QChartView, QCategoryAxis, QValueAxis, QBarSet, QBarSeries, QBarCategoryAxis
 )
 from PyQt6.QtGui import QPainter
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QIcon, QPixmap
 from operator import itemgetter
 
 from info import Info
-from statistics import Statistics
-import sqlite3
+from db_statistics import Statistics, StatisticsThread
+from app_settings import Settings
+
+
 
 try:
     import libdiskscan as libdiscscan
@@ -50,49 +53,95 @@ class ScanThread(QThread):
         except Exception as e:
             self.error.emit(str(e))
 
-
-class SysInfo(QWidget):
-    def __init__(self):
-        super().__init__()
-
-
 class DiskTool(QMainWindow):
     def __init__(self):
         super().__init__()
         ui_path = os.path.join(os.path.dirname(__file__), "DiskUI.ui")
         loadUi(ui_path, self)
-
+        
+        self.layoutWidget.setGeometry(0, 0, 0, 0)
         self.setWindowTitle("LMS-Disk")
         self.sourceButton.clicked.connect(self.source_code_open)
         self.scanButton.clicked.connect(self.on_scan_clicked)
         self.sysInfoButton.clicked.connect(self.show_sysinfo)
         self.snapshotsButton.clicked.connect(self.show_statistics)
+        self.settingsButton.clicked.connect(self.show_settings)
         self.setWindowIconText("Disk Tool")
+        
+        logo = QPixmap(os.path.join(os.path.dirname(__file__), "logo.png"))
+        self.pixmapLabel.setPixmap(logo)
+        self.pixmapLabel.setScaledContents(True)
+        #self.pixmapLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)  
+        #self.pixmapLabel.setScaledContents(True)
+        #self.pixmapLabel.resize( )
+
         self._setup_chart()
+        self._setup_resizable_layout()
 
         if not HAS_LIB:
             self.statusbar.showMessage(f"Не удалось импортировать libdiscscan: {_import_error}")
 
         self.scan_thread = None
+        self.statistics_thread = None
+        self.settings_path = os.path.join(os.path.dirname(__file__), "settings.json")
+        self._load_settings()
+
+    def _load_settings(self):
+        self.settings = {
+            "theme": "Светлая",
+            "top_count": 10,
+            "auto_save": True,
+            "follow_links": False,
+            "default_path": os.path.sep
+        }
+        
+        if os.path.exists(self.settings_path):
+            try:
+                with open(self.settings_path, 'r', encoding='utf-8') as f:
+                    loaded_settings = json.load(f)
+                    self.settings.update(loaded_settings)
+            except Exception:
+                pass
 
     def source_code_open(self):
         webbrowser.open('https://github.com/Nam4ik/LMS-Disk')
+
+
+    # Я не знал как это починить через qtdesigner, по этому пусть будет так хд
+    # Вообще по идее не должен layoutWidget иметь фиксированный размер но он имеет
+    """
+    ...
+    <widget class="QWidget" name="layoutWidget">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>571</width>
+       <height>321</height>
+     </rect>
+     </property>
+     ...
+     """
+    def _setup_resizable_layout(self):
+        self.layoutWidget.setGeometry(0, 0, 0, 0)
+    
+        if self.centralwidget.layout() is None:
+            main_layout = QHBoxLayout(self.centralwidget)
+        else:
+         main_layout = self.centralwidget.layout()
+    
+        main_layout.addWidget(self.layoutWidget)
+    
+        main_layout.setStretch(0, 1)  
+        main_layout.setStretch(1, 3) 
 
     def _setup_chart(self):
         self.chart = QChart()
         self.chart.setTitle("Распределение размеров (топ)")
         self.chart.legend().setVisible(False)
 
-        self.series = QLineSeries()
+        self.series = QBarSeries()
         self.chart.addSeries(self.series)
-
-        self.axis_x = QCategoryAxis()
-        self.axis_x.setLabelsAngle(-45)
-        self.axis_x.setTitleText("Путь (топ элементов)")
-
-        self.axis_y = QValueAxis()
-        self.axis_y.setLabelFormat("%.0f")
-        self.axis_y.setTitleText("Размер (MB)")
 
         self.chart_view = QChartView(self.chart, parent=self.diskChart)
         self.chart_view.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -106,7 +155,9 @@ class DiskTool(QMainWindow):
             QMessageBox.warning(self, "Ошибка", f"Модуль libdiscscan не доступен:\n{_import_error}")
             return
 
-        path_to_scan = abspath(os.sep)
+        self._load_settings()
+        default_path = self.settings.get("default_path", os.path.sep)
+        path_to_scan = abspath(default_path)
         self.statusbar.showMessage(f"Сканирование {path_to_scan} ...")
         QApplication.processEvents()
 
@@ -177,7 +228,9 @@ class DiskTool(QMainWindow):
 
         axis_y.setRange(0, max(bar_set) * 1.1)
 
-        self.chart.setTitle(f"Топ {len(top_n)} элементов на {abspath(os.sep)}")
+        default_path = self.settings.get("default_path", os.path.sep)
+        path_display = abspath(default_path)
+        self.chart.setTitle(f"Топ {len(top_n)} элементов на {path_display}")
         self.statusbar.showMessage(f"Сканирование завершено — показаны {len(top_n)} элементов")
 
     def on_scan_error(self, message: str):
@@ -195,21 +248,47 @@ class DiskTool(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось открыть окно системной информации:\n{e}")
 
-    def on_sysinfo_clicked(self):
-        self.sysInfoButton.clicked.connect(self.show_sysinfo)
-        self.show_sysinfo()
-
     def show_statistics(self):
-        try:
-            self.statistics_window = Statistics()
-            self.statistics_window.show()
+        db_path = os.path.join(os.path.dirname(__file__), "snapshots.db")
+        
+        self.statistics_thread = StatisticsThread(db_path)
+        self.statistics_thread.status_update.connect(self.statusbar.showMessage)
+        self.statistics_thread.window_ready.connect(self._create_statistics_window)
+        self.statistics_thread.data_ready.connect(self._populate_statistics_table)
+        self.statistics_thread.error.connect(self._on_statistics_error)
+        self.statistics_thread.start()
 
+    def _create_statistics_window(self):
+        try:
+            db_path = os.path.join(os.path.dirname(__file__), "snapshots.db")
+            self.statistics_window = Statistics(db_path)
+            self.statistics_window.show()
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось открыть окно статистики:\n{e}")
+            self.statusbar.showMessage("Ошибка при открытии окна статистики")
+    
+    def _populate_statistics_table(self, rows):
+        if hasattr(self, 'statistics_window') and self.statistics_window:
+            self.statistics_window._populate_table(rows)
 
+    def _on_statistics_error(self, message: str):
+        QMessageBox.critical(self, "Ошибка", message)
+        self.statusbar.showMessage("Ошибка при открытии базы данных")
+
+    def show_settings(self):
+        try:
+            self.settings_window = Settings()
+            self.settings_window.destroyed.connect(self._load_settings)
+            self.settings_window.show()
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось открыть окно настроек:\n{e}")
+
+def except_hooks(cls, exception, traceback):
+    sys.__excepthook__(cls, exception, traceback)
 
 def main() -> None:
     app = QApplication(sys.argv)
+    sys.__excepthook__ = except_hooks
     w = DiskTool()
     w.show()
     sys.exit(app.exec())

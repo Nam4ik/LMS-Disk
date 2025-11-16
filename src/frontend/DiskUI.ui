@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>594</width>
-    <height>360</height>
+    <height>358</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,14 +27,21 @@
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <widget class="QLabel" name="label">
-         <property name="text">
-          <string>LMS: DiskTool</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>LMS: Disk Tool</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="pixmapLabel">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
          <item>
           <widget class="QPushButton" name="scanButton">
            <property name="text">

@@ -5,13 +5,8 @@ import os
 import sys
 import sqlite3
 from time import time 
-
 from typing import Dict, Tuple
 
-if os.name == "nt": 
-    from ctypes import wintypes 
-else: 
-    pass 
 
 cdef class Entry:
     cdef public object path
@@ -35,7 +30,6 @@ def _stat_size_and_mtime(path, follow_symlinks=False):
 
 
 def scan(path: str, follow_symlinks: bool=False, max_depth: int=-1):
-
     cdef dict result = {}
     cdef list stack = []  
     cdef object it
@@ -95,24 +89,40 @@ def scan(path: str, follow_symlinks: bool=False, max_depth: int=-1):
                         except Exception:
                             fsize, mtime = 0, 0.0
                         result[full] = (fsize, 'unknown', mtime)
-                except PermissionError:
+                except OSError as e: 
                     # skip
+                    print("OSError in: {dirpath}; Error: {e}; skipped")
                     continue
+
+                except PermissionError as e:
+                    # skip
+                    # FIXME: Почему то не пропускает /proc/map_files и другие не доступные файлы в linux
+                    print("PermissonError in: {dirpath}; Error: {e}; skipped")
+                    continue
+
         finally:
             try:
                 it.close()
             except Exception:
                 pass 
             
-    paths = sorted(result.keys(), key=lambda p: -len(p))
+    paths = sorted(result.keys(), key=lambda p: p.count(os.sep), reverse=True)
     for p in paths:
         size, t, mtime = result[p]
         if t == 'file':
             parent = os.path.dirname(p)
-            while parent and parent in result:
-                psize, pt, pmt = result[parent]
-                result[parent] = (psize + size, pt, pmt)
-                parent = os.path.dirname(parent)
+            # FIXME: Я не уверен нормальная ли здесь будет рекурсия
+            while parent:
+                parent_normalized = os.path.normpath(parent)
+                if parent_normalized in result:
+                    psize, pt, pmt = result[parent_normalized]
+                    result[parent_normalized] = (psize + size, pt, pmt)
+                
+                next_parent = os.path.dirname(parent)
+                if next_parent == parent:  
+                    break
+                parent = next_parent
+    
     return result
 
 
