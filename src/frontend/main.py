@@ -1,15 +1,23 @@
 from os.path import abspath
 import sys, os, webbrowser, datetime, json
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QMessageBox, QWidget
+    QApplication,
+    QMainWindow,
+    QVBoxLayout,
+    QHBoxLayout,
+    QMessageBox,
 )
-from PyQt6.uic import loadUi
 from PyQt6.QtCharts import (
-    QChart, QChartView, QCategoryAxis, QValueAxis, QBarSet, QBarSeries, QBarCategoryAxis
+    QChart,
+    QChartView,
+    QValueAxis,
+    QBarSet,
+    QBarSeries,
+    QBarCategoryAxis,
 )
 from PyQt6.QtGui import QPainter
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QIcon, QPixmap
+from PyQt6.QtGui import QPixmap
 from operator import itemgetter
 
 from info import Info
@@ -29,11 +37,11 @@ except Exception as e:
 
 
 def get_db_path():
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         base_path = sys._MEIPASS
     else:
         base_path = os.path.dirname(__file__)
-    
+
     return os.path.join(base_path, "snapshots.db")
 
 
@@ -41,9 +49,11 @@ class ScanThread(QThread):
     result_ready = pyqtSignal(dict)
     error = pyqtSignal(str)
 
-    def __init__(self, path_to_scan):
+    def __init__(self, path_to_scan, auto_save=bool, follow_links=bool):
         super().__init__()
         self.path_to_scan = path_to_scan
+        self.follow_links = follow_links
+        self.auto_save = auto_save
 
     def run(self):
         try:
@@ -52,8 +62,11 @@ class ScanThread(QThread):
 
             try:
                 result = libdiscscan.scan(self.path_to_scan, False, -1)
-                db_path = get_db_path()
-                libdiscscan.save_snapshot(db_path, f"snapshot-{datetime.datetime.now()}", result)
+                if self.auto_save:
+                    db_path = get_db_path()
+                    libdiscscan.save_snapshot(
+                        db_path, f"snapshot-{datetime.datetime.now()}", result
+                    )
             except TypeError:
                 result = libdiscscan.scan(self.path_to_scan)
             if not isinstance(result, dict):
@@ -63,37 +76,40 @@ class ScanThread(QThread):
         except Exception as e:
             self.error.emit(str(e))
 
+
 class DiskTool(QMainWindow):
     def __init__(self):
         super().__init__()
-        
+
         # Initialize the UI from the generated class
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        
+
         # Set window properties
         self.setWindowTitle("LMS-Disk")
         self.setWindowIconText("Disk Tool")
-        
+
         # Connect button signals
         self.ui.sourceButton.clicked.connect(self.source_code_open)
         self.ui.scanButton.clicked.connect(self.on_scan_clicked)
         self.ui.sysInfoButton.clicked.connect(self.show_sysinfo)
         self.ui.snapshotsButton.clicked.connect(self.show_statistics)
         self.ui.settingsButton.clicked.connect(self.show_settings)
-        
+
         logo = QPixmap(os.path.join(os.path.dirname(__file__), "logo.png"))
         self.ui.pixmapLabel.setPixmap(logo)
         self.ui.pixmapLabel.setScaledContents(True)
-        #self.ui.pixmapLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)  
-        #self.ui.pixmapLabel.setScaledContents(True)
-        #self.ui.pixmapLabel.resize( )
+        # self.ui.pixmapLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # self.ui.pixmapLabel.setScaledContents(True)
+        # self.ui.pixmapLabel.resize( )
 
         self._setup_chart()
         self._setup_resizable_layout()
 
         if not HAS_LIB:
-            self.ui.statusbar.showMessage(f"Не удалось импортировать libdiscscan: {_import_error}")
+            self.ui.statusbar.showMessage(
+                f"Не удалось импортировать libdiscscan: {_import_error}"
+            )
 
         self.scan_thread = None
         self.statistics_thread = None
@@ -106,20 +122,19 @@ class DiskTool(QMainWindow):
             "top_count": 10,
             "auto_save": True,
             "follow_links": False,
-            "default_path": os.path.sep
+            "default_path": os.path.sep,
         }
-        
+
         if os.path.exists(self.settings_path):
             try:
-                with open(self.settings_path, 'r', encoding='utf-8') as f:
+                with open(self.settings_path, "r", encoding="utf-8") as f:
                     loaded_settings = json.load(f)
                     self.settings.update(loaded_settings)
             except Exception:
                 pass
 
     def source_code_open(self):
-        webbrowser.open('https://github.com/Nam4ik/LMS-Disk')
-
+        webbrowser.open("https://github.com/Nam4ik/LMS-Disk")
 
     # Я не знал как это починить через qtdesigner, по этому пусть будет так хд
     # Вообще по идее не должен layoutWidget иметь фиксированный размер но он имеет
@@ -136,18 +151,19 @@ class DiskTool(QMainWindow):
      </property>
      ...
      """
+
     def _setup_resizable_layout(self):
         self.ui.layoutWidget.setGeometry(0, 0, 0, 0)
-    
+
         if self.ui.centralwidget.layout() is None:
             main_layout = QHBoxLayout(self.ui.centralwidget)
         else:
-         main_layout = self.ui.centralwidget.layout()
-    
+            main_layout = self.ui.centralwidget.layout()
+
         main_layout.addWidget(self.ui.layoutWidget)
-    
-        main_layout.setStretch(0, 1)  
-        main_layout.setStretch(1, 3) 
+
+        main_layout.setStretch(0, 1)
+        main_layout.setStretch(1, 3)
 
     def _setup_chart(self):
         self.chart = QChart()
@@ -166,16 +182,20 @@ class DiskTool(QMainWindow):
 
     def on_scan_clicked(self):
         if not HAS_LIB:
-            QMessageBox.warning(self, "Ошибка", f"Модуль libdiscscan не доступен:\n{_import_error}")
+            QMessageBox.warning(
+                self, "Ошибка", f"Модуль libdiscscan не доступен:\n{_import_error}"
+            )
             return
 
         self._load_settings()
+        follow_links = self.settings.get("follow_links", False)
+        auto_save = self.settings.get("auto_save", False)
         default_path = self.settings.get("default_path", os.path.sep)
         path_to_scan = abspath(default_path)
         self.ui.statusbar.showMessage(f"Сканирование {path_to_scan} ...")
         QApplication.processEvents()
 
-        self.scan_thread = ScanThread(path_to_scan)
+        self.scan_thread = ScanThread(path_to_scan, auto_save, follow_links)
         self.scan_thread.result_ready.connect(self.on_scan_finished)
         self.scan_thread.error.connect(self.on_scan_error)
         self.scan_thread.start()
@@ -192,6 +212,9 @@ class DiskTool(QMainWindow):
             self.ui.statusbar.showMessage("Готово — нет данных")
             return
 
+        self._load_settings()
+        top_count = self.settings.get("top_count", 10)
+
         items = []
         for p, (size, t, mtime) in result.items():
             try:
@@ -201,7 +224,7 @@ class DiskTool(QMainWindow):
             items.append((p, size_int, t))
 
         items_sorted = sorted(items, key=itemgetter(1), reverse=True)
-        top_n = items_sorted[:10]
+        top_n = items_sorted[:top_count]
 
         if not top_n:
             QMessageBox.information(self, "Пусто", "Нет данных для графика")
@@ -245,7 +268,9 @@ class DiskTool(QMainWindow):
         default_path = self.settings.get("default_path", os.path.sep)
         path_display = abspath(default_path)
         self.chart.setTitle(f"Топ {len(top_n)} элементов на {path_display}")
-        self.ui.statusbar.showMessage(f"Сканирование завершено — показаны {len(top_n)} элементов")
+        self.ui.statusbar.showMessage(
+            f"Сканирование завершено — показаны {len(top_n)} элементов"
+        )
 
     def on_scan_error(self, message: str):
         self.ui.scanButton.setEnabled(True)
@@ -260,11 +285,13 @@ class DiskTool(QMainWindow):
             self.sysinfo_window.render_data()
 
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось открыть окно системной информации:\n{e}")
+            QMessageBox.critical(
+                self, "Ошибка", f"Не удалось открыть окно системной информации:\n{e}"
+            )
 
     def show_statistics(self):
         db_path = get_db_path()
-        
+
         self.statistics_thread = StatisticsThread(db_path)
         self.statistics_thread.status_update.connect(self.ui.statusbar.showMessage)
         self.statistics_thread.window_ready.connect(self._create_statistics_window)
@@ -278,11 +305,13 @@ class DiskTool(QMainWindow):
             self.statistics_window = Statistics(db_path)
             self.statistics_window.show()
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось открыть окно статистики:\n{e}")
+            QMessageBox.critical(
+                self, "Ошибка", f"Не удалось открыть окно статистики:\n{e}"
+            )
             self.statusbar.showMessage("Ошибка при открытии окна статистики")
-    
+
     def _populate_statistics_table(self, rows):
-        if hasattr(self, 'statistics_window') and self.statistics_window:
+        if hasattr(self, "statistics_window") and self.statistics_window:
             self.statistics_window._populate_table(rows)
 
     def _on_statistics_error(self, message: str):
@@ -295,10 +324,14 @@ class DiskTool(QMainWindow):
             self.settings_window.destroyed.connect(self._load_settings)
             self.settings_window.show()
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось открыть окно настроек:\n{e}")
+            QMessageBox.critical(
+                self, "Ошибка", f"Не удалось открыть окно настроек:\n{e}"
+            )
+
 
 def except_hooks(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
+
 
 def main() -> None:
     app = QApplication(sys.argv)
