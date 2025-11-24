@@ -1,6 +1,6 @@
 import psutil, os, platform
 from PyQt6.QtWidgets import QWidget, QApplication
-import SysInfo
+from SysInfo import Ui_Form
 
 """
 def sysinfo_json() -> str: 
@@ -26,36 +26,38 @@ def sysinfo_json() -> str:
 class Info(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("LMS-Disk - SysInfo")
+        self.ui = Ui_Form()
+        self.ui.setupUi(self)
+        self.setWindowTitle("LMS-Disk - Системная информация")
 
     def render_data(self) -> None:
         try:
 
             cpu_name = platform.processor() or "Неизвестно"
-            self.CPU.setText(cpu_name)
+            self.ui.CPU.setText(cpu_name)
 
             cpu_cores = psutil.cpu_count(logical=False) or psutil.cpu_count()
-            self.CPUCore.setText(str(cpu_cores))
+            self.ui.CPUCore.setText(str(cpu_cores))
 
             cpu_load = psutil.cpu_percent(interval=0.1)
-            self.CPULoad.setText(f"{cpu_load:.1f}%")
+            self.ui.CPULoad.setText(f"{cpu_load:.1f}%")
 
             try:
                 sensors = psutil.sensors_temperatures()
                 if 'coretemp' in sensors and len(sensors['coretemp']) > 0:
                     gpu_temp = sensors['coretemp'][0].current
-                    self.GPUTemp.setText(f"{gpu_temp:.1f}°C")
+                    self.ui.GPUTemp.setText(f"{gpu_temp:.1f}°C")
                 else:
-                    self.GPUTemp.setText("Недоступно")
+                    self.ui.GPUTemp.setText("Недоступно")
             except (KeyError, IndexError, AttributeError):
-                self.GPUTemp.setText("Недоступно")
+                self.ui.GPUTemp.setText("Недоступно")
 
             ram_percent = psutil.virtual_memory().percent
-            self.RAM.setText(f"{ram_percent:.1f}%")
+            self.ui.RAM.setText(f"{ram_percent:.1f}%")
 
             disk_path = '/' if os.name == 'posix' else 'C:'
             disk_percent = psutil.disk_usage(disk_path).percent
-            self.Disk.setText(f"{disk_percent:.1f}%")
+            self.ui.Disk.setText(f"{disk_percent:.1f}%")
 
             try:
                 if os.name == 'posix':
@@ -63,9 +65,9 @@ class Info(QWidget):
                     os_info = f"{uname.sysname} {uname.release}"
                 else:
                     os_info = f"{platform.system()} {platform.release()}"
-                self.OS.setText(os_info)
+                self.ui.OS.setText(os_info)
             except AttributeError:
-                self.OS.setText(platform.system())
+                self.ui.OS.setText(platform.system())
 
         except Exception as e:
             print("Cannot render data: " + str(e))
