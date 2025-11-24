@@ -1,6 +1,6 @@
 import psutil, os, platform
 from PyQt6.QtWidgets import QWidget, QApplication
-from PyQt6.uic import loadUi
+import SysInfo
 
 """
 def sysinfo_json() -> str: 
@@ -26,8 +26,6 @@ def sysinfo_json() -> str:
 class Info(QWidget):
     def __init__(self):
         super().__init__()
-        ui_path = os.path.join(os.path.dirname(__file__), "SysInfo.ui")
-        loadUi(ui_path, self)
         self.setWindowTitle("LMS-Disk - SysInfo")
 
     def render_data(self) -> None:

@@ -15,7 +15,7 @@ from operator import itemgetter
 from info import Info
 from db_statistics import Statistics, StatisticsThread
 from app_settings import Settings
-
+import DiskUI
 
 
 try:
@@ -66,8 +66,6 @@ class ScanThread(QThread):
 class DiskTool(QMainWindow):
     def __init__(self):
         super().__init__()
-        ui_path = os.path.join(os.path.dirname(__file__), "DiskUI.ui")
-        loadUi(ui_path, self)
         
         self.layoutWidget.setGeometry(0, 0, 0, 0)
         self.setWindowTitle("LMS-Disk")

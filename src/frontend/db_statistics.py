@@ -4,8 +4,7 @@ import sys
 from os.path import abspath
 from PyQt6.QtWidgets import QWidget, QTableWidgetItem, QMessageBox, QAbstractItemView
 from PyQt6.QtCore import QThread, pyqtSignal
-from PyQt6.uic import loadUi
-
+import Statistics
 
 def get_db_path():
     if getattr(sys, 'frozen', False):
@@ -64,7 +63,6 @@ class StatisticsThread(QThread):
 class Statistics(QWidget):
     def __init__(self, db_path=None):
         super().__init__()
-        loadUi(os.path.join(os.path.dirname(__file__), "Statistics.ui"), self)
         self.setWindowTitle("LMS-Disk - Snapshots viewer")
         self.db_path = db_path or get_db_path()
         self.refreshButton.clicked.connect(self.load_statistics)
