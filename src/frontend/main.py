@@ -15,7 +15,7 @@ from operator import itemgetter
 from info import Info
 from db_statistics import Statistics, StatisticsThread
 from app_settings import Settings
-import DiskUI
+from DiskUI import Ui_MainWindow
 
 
 try:
@@ -67,27 +67,33 @@ class DiskTool(QMainWindow):
     def __init__(self):
         super().__init__()
         
-        self.layoutWidget.setGeometry(0, 0, 0, 0)
+        # Initialize the UI from the generated class
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
+        
+        # Set window properties
         self.setWindowTitle("LMS-Disk")
-        self.sourceButton.clicked.connect(self.source_code_open)
-        self.scanButton.clicked.connect(self.on_scan_clicked)
-        self.sysInfoButton.clicked.connect(self.show_sysinfo)
-        self.snapshotsButton.clicked.connect(self.show_statistics)
-        self.settingsButton.clicked.connect(self.show_settings)
         self.setWindowIconText("Disk Tool")
         
+        # Connect button signals
+        self.ui.sourceButton.clicked.connect(self.source_code_open)
+        self.ui.scanButton.clicked.connect(self.on_scan_clicked)
+        self.ui.sysInfoButton.clicked.connect(self.show_sysinfo)
+        self.ui.snapshotsButton.clicked.connect(self.show_statistics)
+        self.ui.settingsButton.clicked.connect(self.show_settings)
+        
         logo = QPixmap(os.path.join(os.path.dirname(__file__), "logo.png"))
-        self.pixmapLabel.setPixmap(logo)
-        self.pixmapLabel.setScaledContents(True)
-        #self.pixmapLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)  
-        #self.pixmapLabel.setScaledContents(True)
-        #self.pixmapLabel.resize( )
+        self.ui.pixmapLabel.setPixmap(logo)
+        self.ui.pixmapLabel.setScaledContents(True)
+        #self.ui.pixmapLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)  
+        #self.ui.pixmapLabel.setScaledContents(True)
+        #self.ui.pixmapLabel.resize( )
 
         self._setup_chart()
         self._setup_resizable_layout()
 
         if not HAS_LIB:
-            self.statusbar.showMessage(f"Не удалось импортировать libdiscscan: {_import_error}")
+            self.ui.statusbar.showMessage(f"Не удалось импортировать libdiscscan: {_import_error}")
 
         self.scan_thread = None
         self.statistics_thread = None
@@ -131,14 +137,14 @@ class DiskTool(QMainWindow):
      ...
      """
     def _setup_resizable_layout(self):
-        self.layoutWidget.setGeometry(0, 0, 0, 0)
+        self.ui.layoutWidget.setGeometry(0, 0, 0, 0)
     
-        if self.centralwidget.layout() is None:
-            main_layout = QHBoxLayout(self.centralwidget)
+        if self.ui.centralwidget.layout() is None:
+            main_layout = QHBoxLayout(self.ui.centralwidget)
         else:
-         main_layout = self.centralwidget.layout()
+         main_layout = self.ui.centralwidget.layout()
     
-        main_layout.addWidget(self.layoutWidget)
+        main_layout.addWidget(self.ui.layoutWidget)
     
         main_layout.setStretch(0, 1)  
         main_layout.setStretch(1, 3) 
@@ -151,10 +157,10 @@ class DiskTool(QMainWindow):
         self.series = QBarSeries()
         self.chart.addSeries(self.series)
 
-        self.chart_view = QChartView(self.chart, parent=self.diskChart)
+        self.chart_view = QChartView(self.chart, parent=self.ui.diskChart)
         self.chart_view.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        layout = QVBoxLayout(self.diskChart)
+        layout = QVBoxLayout(self.ui.diskChart)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.chart_view)
 
@@ -166,7 +172,7 @@ class DiskTool(QMainWindow):
         self._load_settings()
         default_path = self.settings.get("default_path", os.path.sep)
         path_to_scan = abspath(default_path)
-        self.statusbar.showMessage(f"Сканирование {path_to_scan} ...")
+        self.ui.statusbar.showMessage(f"Сканирование {path_to_scan} ...")
         QApplication.processEvents()
 
         self.scan_thread = ScanThread(path_to_scan)
@@ -174,16 +180,16 @@ class DiskTool(QMainWindow):
         self.scan_thread.error.connect(self.on_scan_error)
         self.scan_thread.start()
 
-        self.scanButton.setEnabled(False)
-        self.scanButton.setText("Сканирование...")
+        self.ui.scanButton.setEnabled(False)
+        self.ui.scanButton.setText("Сканирование...")
 
     def on_scan_finished(self, result: dict):
-        self.scanButton.setEnabled(True)
-        self.scanButton.setText("Сканировать")
+        self.ui.scanButton.setEnabled(True)
+        self.ui.scanButton.setText("Сканировать")
 
         if not result:
             QMessageBox.information(self, "Пусто", "Ничего не найдено для отображения")
-            self.statusbar.showMessage("Готово — нет данных")
+            self.ui.statusbar.showMessage("Готово — нет данных")
             return
 
         items = []
@@ -199,7 +205,7 @@ class DiskTool(QMainWindow):
 
         if not top_n:
             QMessageBox.information(self, "Пусто", "Нет данных для графика")
-            self.statusbar.showMessage("Готово — нет данных")
+            self.ui.statusbar.showMessage("Готово — нет данных")
             return
 
         self.chart.removeAllSeries()
@@ -239,13 +245,13 @@ class DiskTool(QMainWindow):
         default_path = self.settings.get("default_path", os.path.sep)
         path_display = abspath(default_path)
         self.chart.setTitle(f"Топ {len(top_n)} элементов на {path_display}")
-        self.statusbar.showMessage(f"Сканирование завершено — показаны {len(top_n)} элементов")
+        self.ui.statusbar.showMessage(f"Сканирование завершено — показаны {len(top_n)} элементов")
 
     def on_scan_error(self, message: str):
-        self.scanButton.setEnabled(True)
-        self.scanButton.setText("Сканировать")
+        self.ui.scanButton.setEnabled(True)
+        self.ui.scanButton.setText("Сканировать")
         QMessageBox.critical(self, "Ошибка при сканировании", message)
-        self.statusbar.showMessage("Ошибка при сканировании")
+        self.ui.statusbar.showMessage("Ошибка при сканировании")
 
     def show_sysinfo(self):
         try:
@@ -260,7 +266,7 @@ class DiskTool(QMainWindow):
         db_path = get_db_path()
         
         self.statistics_thread = StatisticsThread(db_path)
-        self.statistics_thread.status_update.connect(self.statusbar.showMessage)
+        self.statistics_thread.status_update.connect(self.ui.statusbar.showMessage)
         self.statistics_thread.window_ready.connect(self._create_statistics_window)
         self.statistics_thread.data_ready.connect(self._populate_statistics_table)
         self.statistics_thread.error.connect(self._on_statistics_error)
@@ -281,7 +287,7 @@ class DiskTool(QMainWindow):
 
     def _on_statistics_error(self, message: str):
         QMessageBox.critical(self, "Ошибка", message)
-        self.statusbar.showMessage("Ошибка при открытии базы данных")
+        self.ui.statusbar.showMessage("Ошибка при открытии базы данных")
 
     def show_settings(self):
         try:
