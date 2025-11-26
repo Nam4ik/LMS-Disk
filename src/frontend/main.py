@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QMessageBox,
+    QWidget,
 )
 from PyQt6.QtCharts import (
     QChart,
@@ -81,15 +82,12 @@ class DiskTool(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # Initialize the UI from the generated class
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        # Set window properties
         self.setWindowTitle("LMS-Disk")
         self.setWindowIconText("Disk Tool")
 
-        # Connect button signals
         self.ui.sourceButton.clicked.connect(self.source_code_open)
         self.ui.scanButton.clicked.connect(self.on_scan_clicked)
         self.ui.sysInfoButton.clicked.connect(self.show_sysinfo)
@@ -99,9 +97,6 @@ class DiskTool(QMainWindow):
         logo = QPixmap(os.path.join(os.path.dirname(__file__), "logo.png"))
         self.ui.pixmapLabel.setPixmap(logo)
         self.ui.pixmapLabel.setScaledContents(True)
-        # self.ui.pixmapLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # self.ui.pixmapLabel.setScaledContents(True)
-        # self.ui.pixmapLabel.resize( )
 
         self._setup_chart()
         self._setup_resizable_layout()
@@ -168,7 +163,7 @@ class DiskTool(QMainWindow):
     def _setup_chart(self):
         self.chart = QChart()
         self.chart.setTitle("Распределение размеров (топ)")
-        self.chart.legend().setVisible(False)
+        self.chart.legend().setVisible(False) 
 
         self.series = QBarSeries()
         self.chart.addSeries(self.series)
@@ -206,10 +201,40 @@ class DiskTool(QMainWindow):
     def on_scan_finished(self, result: dict):
         self.ui.scanButton.setEnabled(True)
         self.ui.scanButton.setText("Сканировать")
+        new_chart = QChart()
+
+        new_chart.setTitle(self.chart.title())
+        new_chart.legend().setVisible(False) 
+
+        for axis in self.series.attachedAxes():
+            self.series.detachAxis(axis)
+        self.series.clear()
 
         if not result:
             QMessageBox.information(self, "Пусто", "Ничего не найдено для отображения")
             self.ui.statusbar.showMessage("Готово — нет данных")
+
+            axis_x = QBarCategoryAxis()
+            axis_x.setTitleText("Путь (топ элементов)")
+            axis_y = QValueAxis()
+            axis_y.setTitleText("Размер (MB)")
+            axis_y.setLabelFormat("%.0f")
+            axis_y.setRange(0, 1)
+
+            new_chart.addAxis(axis_x, Qt.AlignmentFlag.AlignBottom)
+            new_chart.addAxis(axis_y, Qt.AlignmentFlag.AlignLeft)
+            self.series.attachAxis(axis_x)
+            self.series.attachAxis(axis_y)
+            new_chart.addSeries(self.series)
+
+            parent_layout = self.ui.diskChart.layout()
+            parent_layout.removeWidget(self.chart_view)
+            self.chart_view.setChart(new_chart)
+            parent_layout.addWidget(self.chart_view)
+
+            default_path = self.settings.get("default_path", os.path.sep)
+            path_display = abspath(default_path)
+            new_chart.setTitle(f"Топ 0 элементов на {path_display}") 
             return
 
         self._load_settings()
@@ -229,25 +254,47 @@ class DiskTool(QMainWindow):
         if not top_n:
             QMessageBox.information(self, "Пусто", "Нет данных для графика")
             self.ui.statusbar.showMessage("Готово — нет данных")
+
+            axis_x = QBarCategoryAxis()
+            axis_x.setTitleText("Путь (топ элементов)")
+            axis_y = QValueAxis()
+            axis_y.setTitleText("Размер (MB)")
+            axis_y.setLabelFormat("%.0f")
+            axis_y.setRange(0, 1)
+
+            new_chart.addAxis(axis_x, Qt.AlignmentFlag.AlignBottom)
+            new_chart.addAxis(axis_y, Qt.AlignmentFlag.AlignLeft)
+
+            self.series.attachAxis(axis_x)
+            self.series.attachAxis(axis_y)
+
+            new_chart.addSeries(self.series)
+            parent_layout = self.ui.diskChart.layout()
+            parent_layout.removeWidget(self.chart_view)
+
+            self.chart_view.setChart(new_chart)
+
+            parent_layout.addWidget(self.chart_view)
+            default_path = self.settings.get("default_path", os.path.sep)
+            path_display = abspath(default_path)
+            new_chart.setTitle(f"Топ 0 элементов на {path_display}")
+
             return
 
-        self.chart.removeAllSeries()
-
-        bar_series = QBarSeries()
         bar_set = QBarSet("Размер (MB)")
-
         categories = []
+        values_for_max = []
         for p, size_bytes, t in top_n:
             size_mb = size_bytes / (1024.0 * 1024.0)
             bar_set.append(size_mb)
-
+            values_for_max.append(size_mb)
             label = os.path.basename(p) or p
             if len(label) > 20:
                 label = label[:17] + "..."
             categories.append(label)
 
-        bar_series.append(bar_set)
-        self.chart.addSeries(bar_series)
+        self.series.append(bar_set)
+
 
         axis_x = QBarCategoryAxis()
         axis_x.append(categories)
@@ -257,20 +304,27 @@ class DiskTool(QMainWindow):
         axis_y = QValueAxis()
         axis_y.setTitleText("Размер (MB)")
         axis_y.setLabelFormat("%.0f")
+        max_val = max(values_for_max) if values_for_max else 1
+        axis_y.setRange(0, max_val * 1.1)
 
-        self.chart.addAxis(axis_x, Qt.AlignmentFlag.AlignBottom)
-        self.chart.addAxis(axis_y, Qt.AlignmentFlag.AlignLeft)
-        bar_series.attachAxis(axis_x)
-        bar_series.attachAxis(axis_y)
+        new_chart.addAxis(axis_x, Qt.AlignmentFlag.AlignBottom)
+        new_chart.addAxis(axis_y, Qt.AlignmentFlag.AlignLeft)
+        self.series.attachAxis(axis_x)
+        self.series.attachAxis(axis_y)
+        new_chart.addSeries(self.series)
 
-        axis_y.setRange(0, max(bar_set) * 1.1)
-
+        
         default_path = self.settings.get("default_path", os.path.sep)
         path_display = abspath(default_path)
-        self.chart.setTitle(f"Топ {len(top_n)} элементов на {path_display}")
+        new_chart.setTitle(f"Топ {len(top_n)} элементов на {path_display}")
         self.ui.statusbar.showMessage(
             f"Сканирование завершено — показаны {len(top_n)} элементов"
         )
+
+        parent_layout = self.ui.diskChart.layout()
+        parent_layout.removeWidget(self.chart_view)
+        self.chart_view.setChart(new_chart)
+        parent_layout.addWidget(self.chart_view)
 
     def on_scan_error(self, message: str):
         self.ui.scanButton.setEnabled(True)
